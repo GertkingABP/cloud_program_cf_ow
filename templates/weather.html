@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Погода API</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="content-page">
+<h1>Погода</h1>
+
+<section class="card">
+    <form id="weatherForm">
+        <label>Город:</label>
+        <input type="text" id="city" value="" required>
+        <label>API ключ:</label>
+        <input type="text" id="api_key" placeholder="Введите свой OpenWeather ключ" required>
+        <button type="submit">Узнать погоду</button>
+    </form>
+
+    <p id="weather_error" class="error-message" style="display:none;"></p>
+    <hr>
+
+    <div id="weather_container" style="display: none;">
+        <h2 id="weather_city"></h2>
+        <div class="weather-info">
+            <p><strong>Описание:</strong> <span id="weather_desc"></span></p>
+            <p><strong>Температура:</strong> <span id="weather_temp"></span> °C</p>
+            <p><strong>Влажность:</strong> <span id="weather_hum"></span>%</p>
+            <p><strong>Скорость ветра:</strong> <span id="weather_wind"></span> м/с</p>
+        </div>
+    </div>
+</section>
+
+<p><a href="/">← Назад</a></p>
+
+<script>
+document.getElementById("weatherForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const city = document.getElementById("city").value;
+    const api_key = document.getElementById("api_key").value;
+    const resultDiv = document.getElementById("weather_container");
+    const errorMsg = document.getElementById("weather_error");
+
+    resultDiv.style.display = "none";
+    errorMsg.style.display = "none";
+    errorMsg.textContent = "";
+
+    try {
+        const url = `/simple_weather?city=${encodeURIComponent(city)}&api_key=${encodeURIComponent(api_key)}`;
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.error) {
+            errorMsg.textContent = data.error;
+            errorMsg.style.display = "block";
+        } else {
+            document.getElementById("weather_desc").textContent = data.weather;
+            document.getElementById("weather_temp").textContent = data.temperature;
+            document.getElementById("weather_hum").textContent = data.humidity;
+            document.getElementById("weather_wind").textContent = data.wind_speed;
+            resultDiv.style.display = "block";
+        }
+    } catch (error) {
+        errorMsg.textContent = "Ошибка при получении данных.";
+        errorMsg.style.display = "block";
+    }
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Codeforces API</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        /* Дополнительные стили для таблиц */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1em 0;
+            background: rgba(30, 30, 46, 0.9);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(155, 39, 176, 0.3);
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border: 1px solid #44475a;
+            color: #f8f8f2;
+        }
+
+        th {
+            background: linear-gradient(135deg, #7b1fa2, #9c27b0);
+            color: #ffffff;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        tr:nth-child(even) {
+            background-color: rgba(68, 71, 90, 0.3);
+        }
+
+        tr:hover {
+            background-color: rgba(121, 215, 255, 0.1);
+            transition: background-color 0.3s ease;
+        }
+
+        td {
+            border-color: #6272a4;
+        }
+
+        /* Центрирование контента в таблицах */
+        table th:first-child,
+        table td:first-child {
+            text-align: center;
+            width: 60px;
+        }
+
+        /* Стили для заголовков внутри карточек */
+        .card h3 {
+            color: #79d7ff;
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            text-shadow: 0 0 8px rgba(121, 215, 255, 0.4);
+        }
+
+        .card h3:first-child {
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body class="content-page">
+<h1>Codeforces</h1>
+
+<!--Средний ранг пользователя-->
+<section class="card">
+    <h2>Средний ранг пользователя</h2>
+    <form id="cfForm">
+        <label>Введите никнейм:</label>
+        <input type="text" id="cf_id" required>
+        <button type="submit">Получить данные</button>
+    </form>
+    <div id="cf_result" class="result-field"></div>
+</section>
+
+<!--Топ-N пользователей-->
+<section class="card">
+    <h2>Топ-N пользователей Codeforces</h2>
+    <form id="topForm">
+        <label>Введите N:</label>
+        <input type="number" id="top_n" value="10" min="1" max="100">
+        <button type="submit">Показать топ</button>
+    </form>
+    <div id="top_result" class="result-field"></div>
+</section>
+
+<!--Статистика задач-->
+<section class="card">
+    <h2>Статистика задач Codeforces</h2>
+    <button id="loadStats">Показать статистику</button>
+    <div id="stats_result" class="result-field"></div>
+</section>
+
+<p><a href="/">← Назад</a></p>
+
+<script>
+// ---Средний ранг---
+document.getElementById("cfForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const cf_id = document.getElementById("cf_id").value;
+    const response = await fetch(`/cf_rate/${cf_id}`);
+    const data = await response.json();
+
+    const container = document.getElementById("cf_result");
+    if (data.error) {
+        container.innerHTML = `<p class="error-message">${data.error}</p>`;
+    } else {
+        container.innerHTML = `
+            <p><span>Пользователь:</span> ${data.handle}</p>
+            <p><span>Количество контестов:</span> ${data.contests}</p>
+            <p><span>Средний ранг:</span> ${data.average_rank}</p>
+        `;
+    }
+});
+
+// ---Топ пользователей---
+document.getElementById("topForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const n = document.getElementById("top_n").value;
+    const response = await fetch(`/cf_top/${n}`);
+    const data = await response.json();
+
+    const container = document.getElementById("top_result");
+    if (data.users && data.users.length) {
+        let rows = data.users.map(u => `
+            <tr>
+                <td>${u.rank}</td>
+                <td>${u.handle}</td>
+                <td>${u.rating ?? "—"}</td>
+                <td>${u.maxRating ?? "—"}</td>
+            </tr>
+        `).join("");
+        container.innerHTML = `
+            <table>
+                <thead>
+                    <tr><th>#</th><th>Пользователь</th><th>Рейтинг</th><th>Макс. рейтинг</th></tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        `;
+    } else {
+        container.innerHTML = `<p class="error-message">Не удалось получить данные.</p>`;
+    }
+});
+
+// ---Статистика задач---
+document.getElementById("loadStats").addEventListener("click", async () => {
+    const response = await fetch(`/cf_stats`);
+    const data = await response.json();
+    const container = document.getElementById("stats_result");
+
+    const ratingRows = Object.entries(data.rating_statistics)
+        .map(([r, c]) => `<tr><td>${r}</td><td>${c}</td></tr>`).join("");
+
+    const tagRows = Object.entries(data.tag_statistics)
+        .map(([tag, c]) => `<tr><td>${tag}</td><td>${c}</td></tr>`).join("");
+
+    container.innerHTML = `
+        <h3>По рейтингу</h3>
+        <table>
+            <thead>
+                <tr><th>Рейтинг</th><th>Количество задач</th></tr>
+            </thead>
+            <tbody>${ratingRows}</tbody>
+        </table>
+        <h3>По тегам</h3>
+        <table>
+            <thead>
+                <tr><th>Тег</th><th>Количество задач</th></tr>
+            </thead>
+            <tbody>${tagRows}</tbody>
+        </table>
+    `;
+});
+</script>
+</body>
+</html>
